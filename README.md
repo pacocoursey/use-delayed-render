@@ -1,6 +1,6 @@
 # useDelayedRender ![npm bundle size](https://img.shields.io/bundlephobia/minzip/use-delayed-render)
 
-useDelayedRender is a react hook for delaying the render and unmount of a component. This is commonly used to add animate UI elements when they unmount. This requires delaying the unmount of the UI from the DOM and using a seperate piece of state for whether the UI is rendered.
+useDelayedRender is a react hook for delaying the render and unmount of a component. This is commonly used to animate UI on unmount.
 
 <br />
 
@@ -39,6 +39,8 @@ Return values:
 - `mounted`: Whether your component should be mounted in the DOM
 - `rendered`: Whether your component should be visible
 
+<br />
+
 ## Example
 
 Render a modal, but delay the unmount so that our 2 second CSS transition completes before the modal is removed from the DOM.
@@ -72,16 +74,16 @@ This allows you to use simple CSS transitions to animate the mounting/unmounting
 }
 ```
 
+<br />
+
 ## Why?
 
-- Usually you would use [`react-transition-group`](https://github.com/reactjs/react-transition-group) to solve this:
+- Usually you would use [`react-transition-group`](https://github.com/reactjs/react-transition-group) to solve this, but the 2.37MB install size is a bit overkill, compared to this package at 491B gzipped.
 
 ```jsx
 <Transition in={active} unmountOnExit timeout={200} onExited={handleExit}>
   <Modal />
 </Transition>
 ```
-
-But the 2.37MB install size is a bit overkill, compared to this package at 491B gzipped.
 
 - Hooks solve the problem without needing a render function or HOC.
