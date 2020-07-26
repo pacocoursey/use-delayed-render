@@ -12,7 +12,7 @@ const useDelayedRender = (
 ) => {
   const [mounted, setMounted] = useState(active)
   const [rendered, setRendered] = useState(false)
-  const timer = useRef<ReturnType<typeof setTimeout>>()
+  const timer = useRef<number>()
   const mountStart = useRef<number | null>(null)
   const optionsRef = useRef<Options>(options)
 
@@ -21,7 +21,9 @@ const useDelayedRender = (
   }, [options])
 
   useEffect(() => {
-    clearTimeout(timer.current)
+    if (timer.current) {
+      clearTimeout(timer.current)
+    }
     const { enterDelay, exitDelay, onUnmount } = optionsRef.current
 
     if (active) {
