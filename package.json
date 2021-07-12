@@ -1,6 +1,6 @@
 {
   "name": "use-delayed-render",
-  "version": "0.0.7",
+  "version": "0.1.0-beta.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.modern.js",
@@ -10,15 +10,16 @@
     "dist"
   ],
   "scripts": {
+    "prepublish": "yarn build",
     "build": "microbundle --compress --no-sourcemap"
   },
   "devDependencies": {
     "@types/react": "^16.9.35",
-    "microbundle": "^0.12.0-next.9",
+    "microbundle": "^0.13.3",
     "typescript": "^3.8.3"
   },
   "peerDependencies": {
-    "react": "^16.13.1"
+    "react": "*"
   },
   "dependencies": {},
   "author": "@pacocoursey",
