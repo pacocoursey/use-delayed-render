@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 interface Options {
   enterDelay?: number
@@ -6,95 +6,65 @@ interface Options {
   onUnmount?: () => void
 }
 
-const useDelayedRender = (
-  active: boolean = false,
-  options: Options = { enterDelay: 0, exitDelay: 0 }
-) => {
-  const [mounted, setMounted] = useState(active)
-  const [rendered, setRendered] = useState(false)
-  const timer = useRef<number>()
-  const mountStart = useRef<number | null>(null)
-  const optionsRef = useRef<Options>(options)
+const useDelayedRender = (active: boolean = false, options: Options = {}) => {
+  const [, force] = useState<any>()
+  const mounted = useRef(active)
+  const rendered = useRef(false)
+  const renderTimer = useRef<NodeJS.Timeout | null>(null)
+  const unmountTimer = useRef<NodeJS.Timeout | null>(null)
+  const prevActive = useRef(active)
 
-  useEffect(() => {
-    optionsRef.current = options
-  }, [options])
+  const recalculate = useCallback(() => {
+    const { enterDelay = 1, exitDelay = 0 } = options
 
-  useEffect(() => {
-    if (timer.current) {
-      clearTimeout(timer.current)
-    }
-    const { enterDelay, exitDelay, onUnmount } = optionsRef.current
-
-    if (active) {
-      mountStart.current = Date.now()
-
+    if (prevActive.current) {
       // Mount immediately
-      setMounted(true)
+      mounted.current = true
+      if (unmountTimer.current) clearTimeout(unmountTimer.current)
 
-      if (enterDelay === -1) {
-        // Delay for a bit so that rendered is not immediately true
-        if ('requestIdleCallback' in window) {
-          // requestIdleCallback not supported in Safari
-          ;(window as any).requestIdleCallback(() => {
-            setRendered(true)
-          }, { timeout: 100 })
-        } else {
-          setTimeout(() => {
-            setRendered(true)
-          }, 1)
-        }
-      } else if (enterDelay === 0) {
+      if (enterDelay <= 0) {
         // Render immediately
-        setRendered(true)
+        rendered.current = true
       } else {
+        if (renderTimer.current) return
+
         // Render after a delay
-        timer.current = setTimeout(() => {
-          setRendered(true)
+        renderTimer.current = setTimeout(() => {
+          rendered.current = true
+          renderTimer.current = null
+          force({})
         }, enterDelay)
       }
     } else {
       // Immediately set to unrendered
-      setRendered(false)
+      rendered.current = false
 
-      // This is an optimization so that we unmount as soon as possible
-      // instead of always delaying for the time specified in exitDelay
-      // i.e. if the `active` value becomes true and then false in quick succession
-      let delayExitTime = exitDelay
-
-      if (mountStart.current) {
-        const timeSinceMount = Date.now() - mountStart.current
-
-        if (enterDelay && timeSinceMount < enterDelay) {
-          // Unmount immediately, the content had not yet been rendered
-          delayExitTime = 0
-        } else if (exitDelay && timeSinceMount < exitDelay) {
-          delayExitTime = timeSinceMount
-        }
-      }
-
-      if (delayExitTime === 0) {
-        setMounted(false)
-
-        // If mountStart is assigned, we've mounted at least once
-        if (mountStart.current) {
-          onUnmount?.()
-        }
+      if (exitDelay <= 0) {
+        mounted.current = false
       } else {
+        if (unmountTimer.current) return
+
         // Unmount after a delay
-        timer.current = setTimeout(() => {
-          setMounted(false)
-          if (mountStart.current) {
-            onUnmount?.()
-          }
-        }, delayExitTime)
+        unmountTimer.current = setTimeout(() => {
+          mounted.current = false
+          unmountTimer.current = null
+          force({})
+        }, exitDelay)
       }
     }
-  }, [active])
+  }, [options])
+
+  // When the active prop changes, need to re-calculate
+  if (active !== prevActive.current) {
+    prevActive.current = active
+    // We want to do this synchronously with the render, not in an effect
+    // this way when active → true, mounted → true in the same pass
+    recalculate()
+  }
 
   return {
-    mounted,
-    rendered
+    mounted: mounted.current,
+    rendered: rendered.current
   }
 }
 
